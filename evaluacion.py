@@ -1,26 +1,20 @@
-import torchaudio
-from torchmetrics.audio import SignalDistortionRatio
-from torchmetrics.audio import SignalNoiseRatio
 import librosa
+import numpy as np
+import mir_eval
 import matplotlib.pyplot as plt
 
 def calcular_metricas(path_pred,path_original):
-
     # Levanto los audios:
-    original, _ = torchaudio.load(path_original)
-    pred, _ = torchaudio.load(path_pred)
+    pred,_ = librosa.load(path_pred,duration=30,sr=22050,mono=True)
+    original,_ = librosa.load(path_original,duration=30,sr=22050,mono=True)
 
     # Ajusto longitudes para que sean iguales para poder calcular métricas
-    min_length = min(original.size(1), pred.size(1))
-    original = original[:, :min_length]
-    pred = pred[:, :min_length]
+    min_length = min(len(pred),len(original))
+    original = original[:min_length]
+    pred = pred[:min_length]
 
-    # Obtengo métricas:
-    snr = SignalNoiseRatio()
-    sdr = SignalDistortionRatio()
-    print('SNR:',snr(pred,original))
-    print('SDR:',sdr(pred,original))
-
+    sdr,_,_,_ = mir_eval.separation.bss_eval_sources(original, pred)
+    print('SDR:',sdr[0])
 
 def obtener_espectrogramas(path_pred,path_original,instrumento,combinacion):
 
@@ -29,7 +23,7 @@ def obtener_espectrogramas(path_pred,path_original,instrumento,combinacion):
     original,_ = librosa.load(path_original,duration=30,sr=22050,mono=True)
 
 
-    fig, ax = plt.subplots(2, 1, figsize=(12, 6))
+    fig, ax = plt.subplots(2, 1, figsize=(8, 6))
     fig.patch.set_facecolor('white')
 
     _,_,_,_ = ax[0].specgram(original, NFFT=1024, Fs=22050, noverlap=256)
